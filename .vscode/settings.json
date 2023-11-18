@@ -6,5 +6,8 @@
             "source.organizeImports": true,
             "source.fixAll": true
         }
-    }
+    },
+    "cSpell.words": [
+        "storeapi"
+    ]
 }
