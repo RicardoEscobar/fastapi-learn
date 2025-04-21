@@ -19,6 +19,13 @@ BOOKS = [
 async def get_books():
     return BOOKS
 
+@app.get("/books/{book_id}")
+async def get_book(book_id: int):
+    for book in BOOKS:
+        if book.id == book_id:
+            return book
+    return {"error": "Book not found"}
+
 @app.post("/create-book")
 async def create_book(book: BookRequest):
     new_book = Book(**book.model_dump())
