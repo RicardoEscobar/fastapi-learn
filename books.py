@@ -26,8 +26,21 @@ async def get_book(book_id: int):
             return book
     return {"error": "Book not found"}
 
+@app.get("/books/")
+async def get_books_by_rating(rating: int):
+    books_by_rating = [book for book in BOOKS if book.rating == rating]
+    if not books_by_rating:
+        return {"error": "No books found with the given rating"}
+    return books_by_rating
+
 @app.post("/create-book")
 async def create_book(book: BookRequest):
     new_book = Book(**book.model_dump())
     new_book = find_book_id(new_book, BOOKS)
     BOOKS.append(new_book)
+
+@app.put("/books/update_book")
+async def update_book(book: BookRequest):
+    for i in range(len(BOOKS)):
+        if BOOKS[i].id == book.id:
+            BOOKS[i] = Book(**book.model_dump())
