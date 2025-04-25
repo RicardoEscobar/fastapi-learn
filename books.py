@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Path, Query, HTTPException
+from starlette import status
 
 from book import Book
 from bookrequest import BookRequest
@@ -16,22 +17,22 @@ BOOKS = [
 ]
 
 
-@app.get("/books")
+@app.get("/books", status_code=status.HTTP_200_OK)
 async def get_books():
     return BOOKS
 
 
-@app.get("/books/{book_id}")
-async def get_book(book_id: int):
+@app.get("/books/{book_id}", status_code=status.HTTP_200_OK)
+async def get_book(book_id: int = Path(gt=0)):
     for book in BOOKS:
         if book.id == book_id:
             return book
-    return {"error": "Book not found"}
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
-@app.get("/books/")
+@app.get("/books/", status_code=status.HTTP_200_OK)
 async def get_books_by_rating_and_published_date(
-    published_date: int = 2000, rating: int = 1
+    published_date: int = Query(gt=1999, lt=2031), rating: int = Query(qt=0, lt=6)
 ):
     filtered_books = BOOKS.copy()
     if rating:
@@ -48,9 +49,11 @@ async def get_books_by_rating_and_published_date(
         }
 
 
-@app.get("/books/published/")
+@app.get("/books/published/", status_code=status.HTTP_200_OK)
 async def get_books_by_published_date(
-    published_date: int = None, gt: int = None, lt: int = None
+    published_date: int = Query(gt=1999, lt=2031),
+    gt: int = Query(gt=1999),
+    lt: int = Query(lt=2031),
 ):
     filtered_books = BOOKS.copy()
 
@@ -77,31 +80,23 @@ async def get_books_by_published_date(
         }
 
 
-# @app.get("/books/publish/")
-# async def get_books_by_published_date(published_date: int):
-#     books_by_published_date = [
-#         book for book in BOOKS if book.published_date == published_date
-#     ]
-#     if not books_by_published_date:
-#         return {"error": "No books found with the given rating"}
-#     return books_by_published_date
-
-
-@app.post("/create-book")
+@app.post("/create-book", status_code=status.HTTP_201_CREATED)
 async def create_book(book: BookRequest):
     new_book = Book(**book.model_dump())
     new_book = find_book_id(new_book, BOOKS)
     BOOKS.append(new_book)
 
 
-@app.put("/books/update_book")
+@app.put("/books/update_book", status_code=status.HTTP_204_NO_CONTENT)
 async def update_book(book: BookRequest):
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book.id:
             BOOKS[i] = Book(**book.model_dump())
+            return
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
-@app.patch("/books/update_book")
+@app.patch("/books/update_book", status_code=status.HTTP_204_NO_CONTENT)
 async def patch_book(book: BookRequest):
     for existing_book in BOOKS:
         if existing_book.id == book.id:
@@ -109,11 +104,14 @@ async def patch_book(book: BookRequest):
             for key, value in book_data.items():
                 # Update only the provided keys and values
                 setattr(existing_book, key, value)
+            return
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
-@app.delete("/books/{book_id}")
-async def delete_book(book_id: int):
+@app.delete("/books/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_book(book_id: int = Path(gt=0)):
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             del BOOKS[i]
-            break
+            return
+    raise HTTPException(status_code=404, detail="Book not found")
